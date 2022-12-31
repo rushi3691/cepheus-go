@@ -28,14 +28,12 @@ func IsRegistered(c *fiber.Ctx) error {
 	})
 }
 
-var JWT_SECRET = []byte(os.Getenv("JWT_SECRET"))
-
 func JwtMiddleware(c *fiber.Ctx) error {
 
 	claims := &Claims{}
 
 	_, err := jwt.ParseWithClaims(c.Cookies("SSIDCP"), claims, func(token *jwt.Token) (interface{}, error) {
-		return JWT_SECRET, nil
+		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
 
 	if err != nil {
