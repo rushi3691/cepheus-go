@@ -3,7 +3,6 @@ package googleauth
 import (
 	"cephgo/database"
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -34,7 +33,6 @@ func GoogleAuthMiddleware(c *fiber.Ctx) error {
 		user.UserUuid = payload.Claims["sub"].(string)
 		user.UserName = payload.Claims["name"].(string)
 		user.Email = payload.Claims["email"].(string)
-		fmt.Println(user)
 		c.Locals("user", user)
 	}
 	return c.Next()

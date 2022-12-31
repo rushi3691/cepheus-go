@@ -15,7 +15,6 @@ import (
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Println("0")
 		log.Panic("couldn't load .env file")
 	}
 
@@ -25,8 +24,7 @@ func main() {
 	signal.Notify(c, os.Interrupt) // When an interrupt is sent, notify the channel
 
 	// Goroutine to monitor the channel and run app.Shutdown when an interrupt is recieved
-	// This should cause app.Listen to return nil, then allowing the cleanup tasks to be
-	// run.
+	// This should cause app.Listen to return nil, then allowing the cleanup tasks to be run.
 	go func() {
 		<-c
 		log.Println("Gracefully shutting down...")
@@ -44,15 +42,16 @@ func main() {
 	routes.SetupRoutes(app)
 	err := database.CreateDBPool(os.Getenv("RENDER_DB"))
 	if err != nil {
-		log.Println("1")
 		log.Panic(err)
 	}
+
 	PORT := ":8000"
+
 	if p := os.Getenv("PORT"); p != "" {
 		PORT = ":" + p
 	}
+
 	if err := app.Listen(PORT); err != nil {
-		log.Println("2")
 		log.Panic(err)
 	}
 

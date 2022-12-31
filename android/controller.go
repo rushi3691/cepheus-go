@@ -3,7 +3,6 @@ package android
 import (
 	"cephgo/database"
 	"cephgo/utils"
-	"fmt"
 	"os"
 	"time"
 
@@ -15,9 +14,9 @@ func _sendWithJwtHelper(user *database.User, c *fiber.Ctx) error {
 	claims := jwt.MapClaims{
 		"uid":        user.Id,
 		"ini":        utils.GetInitials(user.UserName),
-		"grade":      user.Grade,
 		"registered": user.Registered,
 		"exp":        time.Now().Add(time.Hour * 72).Unix(),
+		// "grade":      user.Grade,
 	}
 
 	// Create token
@@ -33,17 +32,17 @@ func _sendWithJwtHelper(user *database.User, c *fiber.Ctx) error {
 
 func CreateUserController(c *fiber.Ctx) error {
 	userClaims := c.Locals("user").(*database.User)
-	fmt.Println(userClaims)
+
 	{
-		user, err := database.DB_STRUCT.GetUser(userClaims.UserUuid)
+		user, err := database.DB_STRUCT.GetUserByUUID(userClaims.UserUuid)
 		if err == nil {
 			return _sendWithJwtHelper(user, c)
 		}
 	}
-	fmt.Println("1")
+
 	user, err := database.DB_STRUCT.CreateUser(userClaims)
 	if err != nil {
-		fmt.Print(err)
+		// log.Println(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
@@ -53,17 +52,19 @@ func CreateUserController(c *fiber.Ctx) error {
 
 func RegisterUserController(c *fiber.Ctx) error {
 	user := c.Locals("claims").(*database.User)
-	// user := new(database.User)
+
 	if err := c.BodyParser(&user); err != nil {
-		fmt.Println(err)
+		// log.Println(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
 	}
+
 	user, err := database.DB_STRUCT.RegisterUser(user)
 	user.Registered = true
+
 	if err != nil {
-		fmt.Println(err)
+		// log.Println(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
@@ -76,14 +77,14 @@ func CreateTeamController(c *fiber.Ctx) error {
 	team := new(database.Team)
 
 	if err := c.BodyParser(&team); err != nil {
-		fmt.Println(err)
+		// log.Println(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
 	}
 	team, err := database.DB_STRUCT.CreateTeam(team, userClaims.Ini)
 	if err != nil {
-		fmt.Println(err)
+		// log.Println(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
@@ -96,14 +97,14 @@ func RegEventController(c *fiber.Ctx) error {
 	user := c.Locals("claims").(*database.User)
 	body := new(database.RegEventReq)
 	if err := c.BodyParser(&body); err != nil {
-		fmt.Println(err)
+		// log.Println(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
 	}
-	err := database.DB_STRUCT.RegisterEventUser(body, user)
+	err := database.DB_STRUCT.RegisterEventUser(body, int(user.Id))
 	if err != nil {
-		// fmt.Println("here ", err)
+		// log.Println(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
@@ -113,16 +114,20 @@ func RegEventController(c *fiber.Ctx) error {
 	})
 }
 
+type EventReq struct {
+	EventId int `json:"event_id"`
+}
+
 func RemEventController(c *fiber.Ctx) error {
 	user := c.Locals("claims").(*database.User)
-	var event_id int
-	if err := c.BodyParser(&event_id); err != nil {
-		fmt.Print(err)
+	req := new(EventReq)
+	if err := c.BodyParser(&req); err != nil {
+		// log.Println(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
 	}
-	database.DB_STRUCT.RemoveEventUser(user.Id, event_id)
+	database.DB_STRUCT.RemoveEventUser(user.Id, req.EventId)
 	return c.JSON(fiber.Map{
 		"message": "removed",
 	})

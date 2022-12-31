@@ -5,7 +5,6 @@ package database
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -59,12 +58,37 @@ func CreateDBPool(DATABASE_URL string) error {
 	return nil
 }
 
-func (db *DB) GetUser(user_uuid string) (*User, error) {
+func (db *DB) GetUserByUUID(user_uuid string) (*User, error) {
 	user := new(User)
 	row := db.Pool.QueryRow(
 		context.Background(),
 		"SELECT id, user_uuid, user_name, mobile, college, grade, email, registered FROM registered_users WHERE user_uuid=$1",
 		user_uuid,
+	)
+
+	err := row.Scan(
+		&user.Id,
+		&user.UserUuid,
+		&user.UserName,
+		&user.Mobile,
+		&user.College,
+		&user.Grade,
+		&user.Email,
+		&user.Registered,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (db *DB) GetUserByID(user_id int) (*User, error) {
+	user := new(User)
+	row := db.Pool.QueryRow(
+		context.Background(),
+		"SELECT id, user_uuid, user_name, mobile, college, grade, email, registered FROM registered_users WHERE id=$1",
+		user_id,
 	)
 
 	err := row.Scan(
@@ -195,29 +219,36 @@ func (db *DB) CheckUserEvent(event_id int64, user_id int64) error {
 
 func (db *DB) GetTeamCount(event_id int64, team_id int64) int64 {
 	var team_count int64
-	err := db.Pool.QueryRow(
+	_ = db.Pool.QueryRow(
 		context.Background(),
 		"SELECT COUNT(*) FROM EventTeam WHERE event_id=$1 AND team_id=$2",
 		event_id, team_id,
 	).Scan(&team_count)
 
-	if err != nil {
-		fmt.Println(err)
-	}
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 	return team_count
 }
 
-func (db *DB) RegisterEventUser(req *RegEventReq, user *User) error {
+func (db *DB) RegisterEventUser(req *RegEventReq, user_id int) error {
 	team, err := db.GetTeam(req.TeamCode)
 
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		return fmt.Errorf("team code not found")
 	}
 	event, err := db.GetEvent(req.EventId)
 	if err != nil {
 		return fmt.Errorf("event not found")
 	}
+	// user := db.GetUserById(user_id)
+	user, err := db.GetUserByID(user_id)
+	if err != nil {
+		// fmt.Println(err)
+		return fmt.Errorf("user not found")
+	}
+
 	if *user.Grade < event.MinGrade || *user.Grade > event.MaxGrade {
 		return fmt.Errorf("age doesn't fit")
 	}

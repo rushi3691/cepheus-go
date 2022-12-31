@@ -3,7 +3,6 @@ package routes
 import (
 	"cephgo/android"
 	"cephgo/database"
-	"fmt"
 
 	"cephgo/googleauth"
 	"os"
@@ -15,15 +14,12 @@ import (
 type Claims struct {
 	Uid        int64
 	Ini        *string
-	Grade      *int64
 	Registered bool
 	jwt.RegisteredClaims
 }
 
 func IsRegistered(c *fiber.Ctx) error {
 	user := c.Locals("claims").(*database.User)
-	fmt.Println("is registered")
-	fmt.Println(user)
 	if user.Registered {
 		return c.Next()
 	}
@@ -32,12 +28,14 @@ func IsRegistered(c *fiber.Ctx) error {
 	})
 }
 
+var JWT_SECRET = []byte(os.Getenv("JWT_SECRET"))
+
 func JwtMiddleware(c *fiber.Ctx) error {
 
 	claims := &Claims{}
 
 	_, err := jwt.ParseWithClaims(c.Cookies("SSIDCP"), claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(os.Getenv("JWT_SECRET")), nil
+		return JWT_SECRET, nil
 	})
 
 	if err != nil {
@@ -47,7 +45,6 @@ func JwtMiddleware(c *fiber.Ctx) error {
 	}
 	c.Locals("claims", &database.User{
 		Id:         claims.Uid,
-		Grade:      claims.Grade,
 		Ini:        claims.Ini,
 		Registered: claims.Registered,
 	})
