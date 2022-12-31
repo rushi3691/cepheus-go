@@ -5,6 +5,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -208,7 +209,9 @@ func (db *DB) GetTeamCount(event_id int64, team_id int64) int64 {
 
 func (db *DB) RegisterEventUser(req *RegEventReq, user *User) error {
 	team, err := db.GetTeam(req.TeamCode)
+
 	if err != nil {
+		log.Println(err)
 		return fmt.Errorf("team code not found")
 	}
 	event, err := db.GetEvent(req.EventId)
