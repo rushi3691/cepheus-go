@@ -47,7 +47,11 @@ func main() {
 		log.Println("1")
 		log.Panic(err)
 	}
-	if err := app.Listen(":8000"); err != nil {
+	PORT := ":8000"
+	if p := os.Getenv("PORT"); p != "" {
+		PORT = ":" + p
+	}
+	if err := app.Listen(PORT); err != nil {
 		log.Println("2")
 		log.Panic(err)
 	}
